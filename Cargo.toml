@@ -1,0 +1,9 @@
+[package]
+name = "membench"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+core_affinity = "0.8.3"
+fastrand = "2.3.0"
+
