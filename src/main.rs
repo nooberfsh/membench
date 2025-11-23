@@ -5,6 +5,10 @@ use std::{
 };
 
 use core_affinity::CoreId;
+use perf_event::events::Hardware;
+use perf_event::{Builder, Group};
+
+pub mod latency;
 
 #[allow(non_upper_case_globals)]
 pub const SIZE_1GiB: usize = 1024 * 1024 * 1024;
@@ -67,14 +71,37 @@ impl BenchRes {
 }
 
 fn main() {
-    let ids = vec![0, 8];
+    test2();
+}
+
+fn test2() {
+    let round = 10000;
+    let working_set_size = 16 * size::KiB;
+    let res = latency::bench::<0>(round, working_set_size as usize).unwrap();
+    res.report();
+
+    let working_set_size = 32 * size::KiB;
+    let res = latency::bench::<1>(round, working_set_size as usize).unwrap();
+    res.report();
+
+    let working_set_size = 32 * size::KiB;
+    let res = latency::bench::<3>(round, working_set_size as usize).unwrap();
+    res.report();
+
+    let working_set_size = 32 * size::KiB;
+    let res = latency::bench::<7>(round, working_set_size as usize).unwrap();
+    res.report();
+}
+
+fn test1() {
+    let ids = vec![0];
     let core_ids: Vec<_> = core_affinity::get_core_ids()
         .unwrap()
         .into_iter()
         .filter(|x| ids.contains(&x.id))
         .collect();
     let round = 10;
-    let size_per_core = SIZE_1GiB * 32;
+    let size_per_core = SIZE_1GiB * 16;
     let size = size_per_core * core_ids.len();
     let data = CacheLine::alloc(size);
 
@@ -85,10 +112,11 @@ fn main() {
 
     let time = Instant::now();
 
-    bench_bandwidth_read(&data, round, core_ids);
+    bench_bandwidth_read2(&data, round);
 
     res.time = time.elapsed();
     res.desc();
+    
 }
 
 fn bench_bandwidth_read(data: &[CacheLine], round: usize, core_ids: Vec<CoreId>) {
@@ -120,18 +148,39 @@ fn bench_bandwidth_read(data: &[CacheLine], round: usize, core_ids: Vec<CoreId>)
     })
 }
 
-// fn read(data: &[CacheLine]) {
-//     use std::arch::asm;
-//     for cl in data {
-//         unsafe {
-//             asm!(
-//                 "mov {temp}, [{x}]",
-//                 temp = out(reg) _,
-//                 x = in(reg) cl,
-//             )
-//         }
-//     }
-// }
+fn bench_bandwidth_read2(data: &[CacheLine], round: usize) -> anyhow::Result<()> {
+    let id = CoreId { id: 0 };
+
+    let ok = core_affinity::set_for_current(id);
+    if !ok {
+        panic!("set affinity failed, coreid: {}", id.id)
+    }
+    let time = Instant::now();
+    let mut group = Group::new()?;
+    let cycles = group.add(&Builder::new(Hardware::CPU_CYCLES))?;
+
+    group.enable()?;
+    for _ in 0..round {
+        std::hint::black_box(read(&data));
+    }
+    group.disable()?;
+
+    let counts = group.read()?;
+
+    let total_cycles: u64 = counts[&cycles];
+    let avg_cycles = total_cycles / data.len() as u64 / round as u64;
+    println!("avg cycles: {avg_cycles}");
+
+    let res = BenchRes {
+        core: Some(id),
+        time: time.elapsed(),
+        bytes: data.len() * size_of::<CacheLine>() * round,
+    };
+    res.desc();
+    let avg_latency = res.time.as_nanos() as f64 / data.len() as f64 / round as f64;
+    println!("avg latency: {avg_latency}");
+    Ok(())
+}
 
 fn read(data: &[CacheLine]) -> u64 {
     let mut ret = 0;
