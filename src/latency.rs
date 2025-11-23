@@ -14,23 +14,13 @@ pub struct BenchResult {
     pub working_set_size: usize,
     pub element_size: usize,
     pub element_len: usize,
-    pub stats: Vec<BenchStats>,
+    pub stats: BenchStats,
 }
 
 impl BenchResult {
     pub fn report(&self) {
-        assert_eq!(self.stats.len(), self.round);
-        let mut total_cycles = 0;
-        let mut total_l1_access = 0;
-        let mut total_l1_miss = 0;
-        for stat in &self.stats {
-            total_cycles += stat.cycles;
-            total_l1_access += stat.l1_access;
-            total_l1_miss += stat.l1_miss;
-        }
-
-        let avg_cycles = total_cycles / self.element_len as u64 / self.round as u64;
-        let miss_rate = total_l1_miss as f64 / total_l1_access as f64;
+        let avg_cycles = self.stats.cycles / self.element_len as u64 / self.round as u64;
+        let miss_rate = self.stats.l1_miss as f64 / self.stats.l1_access as f64;
         println!(
             "round: {}, working_set_size: {}, element size: {}, element len: {}",
             self.round,
@@ -38,7 +28,7 @@ impl BenchResult {
             self.element_size,
             self.element_len
         );
-        println!("avg cycles: {avg_cycles}, miss_rate: {miss_rate:.2}");
+        println!("avg cycles: {avg_cycles}, miss: {}, access: {}, miss_rate: {miss_rate:.2}", self.stats.l1_miss, self.stats.l1_access);
     }
 }
 
@@ -84,10 +74,7 @@ fn prepare_working_set_rand<const PAD: usize>(len: usize) -> anyhow::Result<Vec<
 
     let mut idx: Vec<usize> = (1..len).collect();
     fastrand::shuffle(&mut idx);
-    fastrand::shuffle(&mut idx);
-    fastrand::shuffle(&mut idx);
-    fastrand::shuffle(&mut idx);
-    //println!("{:?}", idx);
+    //println!("\n{:?}\n", idx);
 
     let mut current = 0;
     while let Some(next) = idx.pop() {
@@ -99,7 +86,7 @@ fn prepare_working_set_rand<const PAD: usize>(len: usize) -> anyhow::Result<Vec<
     Ok(ret)
 }
 
-fn bench_one<const PAD: usize>(data: &[Element<PAD>]) -> anyhow::Result<BenchStats> {
+fn bench_impl<const PAD: usize>(data: &[Element<PAD>], round: usize) -> anyhow::Result<BenchStats> {
     const ACCESS: Cache = Cache {
         which: CacheId::L1D,
         operation: CacheOp::READ,
@@ -117,7 +104,11 @@ fn bench_one<const PAD: usize>(data: &[Element<PAD>]) -> anyhow::Result<BenchSta
     let cycles = group.add(&Builder::new(Hardware::CPU_CYCLES))?;
 
     group.enable()?;
-    let _ = black_box(read(data));
+    // 注意: 需要把所有 round 的统计只能在一个 perf counter 中统计.
+    // 每个 round 单独分配 perf counter 的话, 由于每个 counter 初始化的时候会清空缓存,导致最终的统计失效
+    for _ in 0..round {
+        let _ = black_box(read(data));
+    }
     group.disable()?;
 
     let counts = group.read()?;
@@ -198,11 +189,7 @@ pub fn bench<const PAD: usize>(
     assert_eq!(data.len(), len);
     assert_eq!(len * element_size, working_set_size);
 
-    let mut stats = Vec::with_capacity(round);
-    for _ in 0..round {
-        let res = bench_one(&data)?;
-        stats.push(res);
-    }
+    let stats = bench_impl(&data, round)?;
     let ret = BenchResult {
         round,
         working_set_size: working_set_size,

@@ -75,20 +75,20 @@ fn main() {
 }
 
 fn test2() {
-    let round = 10000;
-    let working_set_size = 16 * size::KiB;
+    let round = 100;
+    let working_set_size = 24 * size::MiB;
     let res = latency::bench::<0>(round, working_set_size as usize).unwrap();
     res.report();
 
-    let working_set_size = 32 * size::KiB;
+    //let working_set_size = 16* size::KiB;
     let res = latency::bench::<1>(round, working_set_size as usize).unwrap();
     res.report();
 
-    let working_set_size = 32 * size::KiB;
+    //let working_set_size = 16 * size::KiB;
     let res = latency::bench::<3>(round, working_set_size as usize).unwrap();
     res.report();
 
-    let working_set_size = 32 * size::KiB;
+    //let working_set_size = 32 * size::KiB;
     let res = latency::bench::<7>(round, working_set_size as usize).unwrap();
     res.report();
 }
