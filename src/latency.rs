@@ -45,34 +45,6 @@ pub struct Element<const PAD: usize> {
     _pad: [usize; PAD],
 }
 
-pub enum Pattern {
-    Seq,
-    Random,
-    RandomBlock(usize),
-}
-
-pub struct WorkingSetData<const PAD: usize> {
-    pub data: Vec<Element<PAD>>,
-    pub working_set_size: usize,
-    pattern: Pattern,
-}
-
-impl<const PAD: usize> WorkingSetData<PAD> {
-    pub fn new(working_set_size: usize) -> anyhow::Result<Self> {
-        let element_size = size_of::<Element<PAD>>();
-        
-        if working_set_size % element_size != 0 {
-            bail!("working set size 必须是 Element size 的整数倍")
-        }
-        
-        let len = working_set_size / element_size;
-        let data = prepare_working_set_rand::<PAD>(len)?;
-        check(&data);
-        assert_eq!(data.len(), len);
-        assert_eq!(len * element_size, working_set_size);
-    }
-}
-
 fn prepare_working_set<const PAD: usize>(len: usize) -> anyhow::Result<Vec<Element<PAD>>> {
     assert!(len > 0);
     let mut ret = Vec::with_capacity(len);

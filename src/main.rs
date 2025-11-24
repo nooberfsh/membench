@@ -9,6 +9,7 @@ use perf_event::events::Hardware;
 use perf_event::{Builder, Group};
 
 pub mod latency;
+pub mod latency2;
 
 #[allow(non_upper_case_globals)]
 pub const SIZE_1GiB: usize = 1024 * 1024 * 1024;
@@ -76,7 +77,7 @@ fn main() {
 
 fn test2() {
     let round = 100;
-    let working_set_size = 24 * size::MiB;
+    let working_set_size = 4 * size::MiB;
     let res = latency::bench::<0>(round, working_set_size as usize).unwrap();
     res.report();
 
@@ -90,6 +91,16 @@ fn test2() {
 
     //let working_set_size = 32 * size::KiB;
     let res = latency::bench::<7>(round, working_set_size as usize).unwrap();
+    res.report();
+
+    let pattern = latency2::Pattern::Random;
+    let res = latency2::bench(round, 1, working_set_size as usize, pattern).unwrap();
+    res.report();
+    let res = latency2::bench(round, 2, working_set_size as usize, pattern).unwrap();
+    res.report();
+    let res = latency2::bench(round, 4, working_set_size as usize, pattern).unwrap();
+    res.report();
+    let res = latency2::bench(round, 8, working_set_size as usize, pattern).unwrap();
     res.report();
 }
 
