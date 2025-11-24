@@ -1,10 +1,10 @@
 use std::fmt::Display;
 use std::fs::read_to_string;
-use std::path::PathBuf;
 use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::bail;
 use anyhow::Context;
+use anyhow::bail;
 
 #[derive(Copy, Clone, Debug)]
 pub enum CacheType {
@@ -16,8 +16,7 @@ pub enum CacheType {
 
 impl CacheType {
     pub fn as_str(&self) -> &str {
-        
-         match self {
+        match self {
             CacheType::L1D => "L1D",
             CacheType::L1I => "L1I",
             CacheType::L2 => "L2",
@@ -49,14 +48,14 @@ pub fn get_cpu_cache(cpu: usize) -> anyhow::Result<Vec<Cache>> {
 
     let mut ret = vec![];
     for i in 0.. {
-      let mut index = base.clone();
-      index.push(format!("index{i}"));
-      if index.exists() {
-          let d = get_cache_info(&index)?;
-          ret.push(d);
-      } else {
-          break
-      }
+        let mut index = base.clone();
+        index.push(format!("index{i}"));
+        if index.exists() {
+            let d = get_cache_info(&index)?;
+            ret.push(d);
+        } else {
+            break;
+        }
     }
 
     Ok(ret)
@@ -68,7 +67,7 @@ fn get_cache_info(dir: &Path) -> anyhow::Result<Cache> {
     let ty = load_string(dir, "type")?;
     let ty = ty.trim();
 
-    let cache_ty = match(level, ty) {
+    let cache_ty = match (level, ty) {
         (1, "Data") => CacheType::L1D,
         (1, "Instruction") => CacheType::L1I,
         (2, "Unified") => CacheType::L2,
@@ -76,15 +75,14 @@ fn get_cache_info(dir: &Path) -> anyhow::Result<Cache> {
         _ => bail!("unkown cache type, level: {level}, type: {ty}"),
     };
 
-
-    let mut size_path= dir.to_owned();
+    let mut size_path = dir.to_owned();
     size_path.push("size");
     let size = read_to_string(&size_path)?;
     let size = size.trim();
     let size = if let Some(s) = size.strip_suffix("K") {
         let s: usize = s.parse()?;
         s * 1024
-    }  else {
+    } else {
         bail!("invalid cache size: {size}")
     };
 
@@ -95,7 +93,7 @@ fn get_cache_info(dir: &Path) -> anyhow::Result<Cache> {
         ty: cache_ty,
         size,
         coherency_line_size,
-           ways_of_associativity,
+        ways_of_associativity,
     })
 }
 
@@ -121,6 +119,14 @@ impl Display for CacheType {
 impl Display for Cache {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let size = size::Size::from_const(self.size as i64);
-        write!(f, "{}: size: {}, coherency_line_size: {}, ways_of_associativity: {}, sets: {}", self.ty.as_str(), size, self.coherency_line_size, self.ways_of_associativity, self.sets())
+        write!(
+            f,
+            "{}: size: {}, coherency_line_size: {}, ways_of_associativity: {}, sets: {}",
+            self.ty.as_str(),
+            size,
+            self.coherency_line_size,
+            self.ways_of_associativity,
+            self.sets()
+        )
     }
 }

@@ -8,9 +8,9 @@ use core_affinity::CoreId;
 use perf_event::events::Hardware;
 use perf_event::{Builder, Group};
 
+pub mod cache;
 pub mod latency;
 pub mod latency2;
-pub mod cache;
 
 #[allow(non_upper_case_globals)]
 pub const SIZE_1GiB: usize = 1024 * 1024 * 1024;
@@ -72,7 +72,7 @@ impl BenchRes {
     }
 }
 
-fn main() -> anyhow::Result<()>{
+fn main() -> anyhow::Result<()> {
     let caches = cache::get_cpu_cache(0)?;
     for c in caches {
         println!("{}", c);
@@ -133,7 +133,6 @@ fn test1() {
 
     res.time = time.elapsed();
     res.desc();
-    
 }
 
 fn bench_bandwidth_read(data: &[CacheLine], round: usize, core_ids: Vec<CoreId>) {

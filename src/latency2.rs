@@ -29,7 +29,10 @@ impl BenchResult {
             self.group_size,
             self.group_len
         );
-        println!("avg cycles: {avg_cycles}, miss: {}, access: {}, miss_rate: {miss_rate:.2}", self.stats.l1d_miss, self.stats.l1d_access);
+        println!(
+            "avg cycles: {avg_cycles}, miss: {}, access: {}, miss_rate: {miss_rate:.2}",
+            self.stats.l1d_miss, self.stats.l1d_access
+        );
     }
 }
 
@@ -47,13 +50,13 @@ pub struct Element(*const Element);
 #[derive(Copy, Clone)]
 #[repr(align(64))]
 pub struct CacheLine {
-    data: [Element; ELEMENTS_PER_CACHE_LINE]
+    data: [Element; ELEMENTS_PER_CACHE_LINE],
 }
 
 impl CacheLine {
     pub fn empty() -> Self {
         CacheLine {
-            data: [Element(null()); ELEMENTS_PER_CACHE_LINE]
+            data: [Element(null()); ELEMENTS_PER_CACHE_LINE],
         }
     }
 }
@@ -79,7 +82,11 @@ pub struct WorkingSetData {
 }
 
 impl WorkingSetData {
-    pub fn new(working_set_size: usize, group_size: usize, pattern: Pattern) -> anyhow::Result<Self> {
+    pub fn new(
+        working_set_size: usize,
+        group_size: usize,
+        pattern: Pattern,
+    ) -> anyhow::Result<Self> {
         let element_size = size_of::<Element>();
 
         // 保证 Element size 等于系统字长
@@ -95,8 +102,8 @@ impl WorkingSetData {
         if group_size == 0 {
             bail!("group size 必须 >0")
         }
-        
-        if working_set_size % CACHE_LINE_SIZE!= 0 {
+
+        if working_set_size % CACHE_LINE_SIZE != 0 {
             bail!("working set size 必须是 cache line size 的整数倍")
         }
 
@@ -110,10 +117,10 @@ impl WorkingSetData {
             if working_set_size % block_count != 0 {
                 bail!("working set size 必须是 block count 的整数倍")
             }
-            if block_size % CACHE_LINE_SIZE!= 0 {
+            if block_size % CACHE_LINE_SIZE != 0 {
                 bail!("block size 必须是 cache line size 的整数倍")
             }
-            
+
             if block_size % group_size != 0 {
                 bail!("block size 必须是 group size 的整数倍")
             }
@@ -121,21 +128,19 @@ impl WorkingSetData {
 
         let cache_line_len = working_set_size / CACHE_LINE_SIZE;
         let group_len = working_set_size / group_size / element_size;
-        let mut data = vec![CacheLine::empty();cache_line_len];
+        let mut data = vec![CacheLine::empty(); cache_line_len];
 
         // 根据 pattern 计算出元素的访问的顺序.
         // 不包含第一个元素, 第一个访问的元素始终是 data[0].data[0]
         let group_idx: Vec<usize> = match pattern {
-            Pattern::Seq => {
-                (1..group_len).collect()
-            },
+            Pattern::Seq => (1..group_len).collect(),
             Pattern::Random => {
                 let mut idx: Vec<usize> = (1..group_len).collect();
                 fastrand::shuffle(&mut idx);
-                idx                
+                idx
             }
             Pattern::RandomBlock(block_count) => {
-                todo!()                     
+                todo!()
             }
         };
         assert_eq!(group_idx.len() + 1, group_len);
@@ -143,11 +148,11 @@ impl WorkingSetData {
         let location = |group_idx: usize| {
             let element_idx = group_idx * group_size;
             let cache_line_idx = element_idx / ELEMENTS_PER_CACHE_LINE;
-            let cache_line_offset = element_idx %  ELEMENTS_PER_CACHE_LINE;
-            (cache_line_idx, cache_line_offset)  
+            let cache_line_offset = element_idx % ELEMENTS_PER_CACHE_LINE;
+            (cache_line_idx, cache_line_offset)
         };
 
-        // 第一个元素作为其实元素 
+        // 第一个元素作为其实元素
         let mut current = 0;
         // 把所有 group 按照 group_idx 串联起来.
         for next in &group_idx {
@@ -164,8 +169,8 @@ impl WorkingSetData {
             group_len,
             working_set_size,
             pattern,
-       };
-        
+        };
+
         ret.check(&group_idx);
         Ok(ret)
     }
@@ -173,7 +178,10 @@ impl WorkingSetData {
     fn check(&self, expect_group_idx: &[usize]) {
         assert!(!self.data.is_empty());
         assert_eq!(self.data.len() * CACHE_LINE_SIZE, self.working_set_size);
-        assert_eq!(self.working_set_size, self.group_size * self.group_len * size_of::<Element>());
+        assert_eq!(
+            self.working_set_size,
+            self.group_size * self.group_len * size_of::<Element>()
+        );
 
         // 遍历 data 记录访问的元素的 group idx
         let mut group_idx = vec![];
@@ -183,10 +191,10 @@ impl WorkingSetData {
             while let Some(r) = cursor.0.as_ref() {
                 // 计算下一个元素到第一个元素的距离
                 let element_idx = cursor.0.offset_from(base);
-                assert!(element_idx >0);
+                assert!(element_idx > 0);
                 let g_idx = element_idx as usize / self.group_size;
                 assert_eq!(element_idx as usize % self.group_size, 0);
-                group_idx.push(g_idx);                
+                group_idx.push(g_idx);
                 cursor = r;
             }
         }
@@ -221,7 +229,6 @@ fn bench_impl(data: &[CacheLine], round: usize) -> anyhow::Result<BenchStats> {
         ..l1d_access
     };
 
-
     let mut group = Group::new()?;
     let l1d_access_counter = group.add(&Builder::new(l1d_access))?;
     let l1d_miss_counter = group.add(&Builder::new(l1d_miss))?;
@@ -252,11 +259,11 @@ pub fn bench(
 ) -> anyhow::Result<BenchResult> {
     let data = WorkingSetData::new(working_set_size, group_size, pattern)?;
 
-    let ok = core_affinity::set_for_current(CoreId{id: 0});
+    let ok = core_affinity::set_for_current(CoreId { id: 0 });
     if !ok {
         panic!("set affinity failed, coreid: {}", 0);
     }
-    
+
     let stats = bench_impl(&data.data, round)?;
     let ret = BenchResult {
         round,

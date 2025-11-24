@@ -28,7 +28,10 @@ impl BenchResult {
             self.element_size,
             self.element_len
         );
-        println!("avg cycles: {avg_cycles}, miss: {}, access: {}, miss_rate: {miss_rate:.2}", self.stats.l1d_miss, self.stats.l1d_access);
+        println!(
+            "avg cycles: {avg_cycles}, miss: {}, access: {}, miss_rate: {miss_rate:.2}",
+            self.stats.l1d_miss, self.stats.l1d_access
+        );
     }
 }
 
@@ -99,7 +102,6 @@ fn bench_impl<const PAD: usize>(data: &[Element<PAD>], round: usize) -> anyhow::
         ..l1d_access
     };
 
-
     let mut group = Group::new()?;
     let l1d_access_counter = group.add(&Builder::new(l1d_access))?;
     let l1d_miss_counter = group.add(&Builder::new(l1d_miss))?;
@@ -164,11 +166,10 @@ pub fn bench<const PAD: usize>(
 ) -> anyhow::Result<BenchResult> {
     let element_size = size_of::<Element<PAD>>();
 
-    let ok = core_affinity::set_for_current(CoreId{id: 0});
+    let ok = core_affinity::set_for_current(CoreId { id: 0 });
     if !ok {
         panic!("set affinity failed, coreid: {}", 0);
     }
-    
 
     if PAD == 0 {
         assert_eq!(element_size, size_of::<usize>());
