@@ -1,7 +1,7 @@
 use std::hint::black_box;
 use std::ptr::null;
 
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use core_affinity::CoreId;
 use perf_event::events::{Cache, CacheId, CacheOp, CacheResult, Hardware};
 use perf_event::{Builder, Group};
@@ -32,6 +32,8 @@ impl BenchResult {
     }
 }
 
+/// 注意: 硬件计数器的数量是有限的,所以这里最好不要超过4个指标,具体的数量和硬件相关
+/// 具体请看[这里](https://docs.rs/perf-event2/latest/perf_event/struct.Group.html#limits-on-group-size)
 pub struct BenchStats {
     pub cycles: u64,
     pub l1d_access: u64,
@@ -41,6 +43,34 @@ pub struct BenchStats {
 pub struct Element<const PAD: usize> {
     pub n: *const Element<PAD>,
     _pad: [usize; PAD],
+}
+
+pub enum Pattern {
+    Seq,
+    Random,
+    RandomBlock(usize),
+}
+
+pub struct WorkingSetData<const PAD: usize> {
+    pub data: Vec<Element<PAD>>,
+    pub working_set_size: usize,
+    pattern: Pattern,
+}
+
+impl<const PAD: usize> WorkingSetData<PAD> {
+    pub fn new(working_set_size: usize) -> anyhow::Result<Self> {
+        let element_size = size_of::<Element<PAD>>();
+        
+        if working_set_size % element_size != 0 {
+            bail!("working set size 必须是 Element size 的整数倍")
+        }
+        
+        let len = working_set_size / element_size;
+        let data = prepare_working_set_rand::<PAD>(len)?;
+        check(&data);
+        assert_eq!(data.len(), len);
+        assert_eq!(len * element_size, working_set_size);
+    }
 }
 
 fn prepare_working_set<const PAD: usize>(len: usize) -> anyhow::Result<Vec<Element<PAD>>> {
