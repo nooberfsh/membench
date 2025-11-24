@@ -20,7 +20,7 @@ pub struct BenchResult {
 impl BenchResult {
     pub fn report(&self) {
         let avg_cycles = self.stats.cycles / self.element_len as u64 / self.round as u64;
-        let miss_rate = self.stats.l1_miss as f64 / self.stats.l1_access as f64;
+        let miss_rate = self.stats.l1d_miss as f64 / self.stats.l1d_access as f64;
         println!(
             "round: {}, working_set_size: {}, element size: {}, element len: {}",
             self.round,
@@ -28,14 +28,14 @@ impl BenchResult {
             self.element_size,
             self.element_len
         );
-        println!("avg cycles: {avg_cycles}, miss: {}, access: {}, miss_rate: {miss_rate:.2}", self.stats.l1_miss, self.stats.l1_access);
+        println!("avg cycles: {avg_cycles}, miss: {}, access: {}, miss_rate: {miss_rate:.2}", self.stats.l1d_miss, self.stats.l1d_access);
     }
 }
 
 pub struct BenchStats {
     pub cycles: u64,
-    pub l1_access: u64,
-    pub l1_miss: u64,
+    pub l1d_access: u64,
+    pub l1d_miss: u64,
 }
 
 pub struct Element<const PAD: usize> {
@@ -87,20 +87,20 @@ fn prepare_working_set_rand<const PAD: usize>(len: usize) -> anyhow::Result<Vec<
 }
 
 fn bench_impl<const PAD: usize>(data: &[Element<PAD>], round: usize) -> anyhow::Result<BenchStats> {
-    const ACCESS: Cache = Cache {
+    let l1d_access: Cache = Cache {
         which: CacheId::L1D,
         operation: CacheOp::READ,
         result: CacheResult::ACCESS,
     };
-    const MISS: Cache = Cache {
+    let l1d_miss: Cache = Cache {
         result: CacheResult::MISS,
-        ..ACCESS
+        ..l1d_access
     };
-    
+
 
     let mut group = Group::new()?;
-    let access_counter = group.add(&Builder::new(ACCESS))?;
-    let miss_counter = group.add(&Builder::new(MISS))?;
+    let l1d_access_counter = group.add(&Builder::new(l1d_access))?;
+    let l1d_miss_counter = group.add(&Builder::new(l1d_miss))?;
     let cycles = group.add(&Builder::new(Hardware::CPU_CYCLES))?;
 
     group.enable()?;
@@ -114,8 +114,8 @@ fn bench_impl<const PAD: usize>(data: &[Element<PAD>], round: usize) -> anyhow::
     let counts = group.read()?;
     let ret = BenchStats {
         cycles: counts[&cycles],
-        l1_access: counts[&access_counter],
-        l1_miss: counts[&miss_counter],
+        l1d_access: counts[&l1d_access_counter],
+        l1d_miss: counts[&l1d_miss_counter],
     };
     Ok(ret)
 }
@@ -133,7 +133,7 @@ fn read<const PAD: usize>(data: &[Element<PAD>]) -> usize {
 }
 
 fn check<const PAD: usize>(data: &[Element<PAD>]) {
-    debug_assert!(!data.is_empty());
+    assert!(!data.is_empty());
     let mut refs = vec![];
     unsafe {
         let mut cursor = data.get_unchecked(0);
