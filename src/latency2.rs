@@ -73,8 +73,8 @@ pub enum Pattern {
 }
 
 // working set 中数据是以 group 为基本单位, 每次访问只读取group 的第一个 Element
-pub struct WorkingSetData {
-    pub data: Vec<CacheLine>,
+pub struct WorkingSetData<'a> {
+    pub data: &'a mut [CacheLine],
     // 一个 group 中 Element 的数量
     pub group_size: usize,
     // working set 中 group 的数量,
@@ -95,13 +95,13 @@ pub fn alloc_working_set(working_set_size: usize) -> anyhow::Result<Vec<CacheLin
     Ok(data)
 }
 
-impl WorkingSetData {
+impl<'a> WorkingSetData<'a> {
     pub fn new(
-        working_set_size: usize,
+        data: &'a mut[CacheLine],
         group_size: usize,
         pattern: Pattern,
     ) -> anyhow::Result<Self> {
-        let mut data = alloc_working_set(working_set_size)?;
+        let working_set_size = data.len() * CACHE_LINE_SIZE;
 
         let element_size = size_of::<Element>();
 
@@ -267,7 +267,8 @@ pub fn bench(
     working_set_size: usize,
     pattern: Pattern,
 ) -> anyhow::Result<BenchResult> {
-    let data = WorkingSetData::new(working_set_size, group_size, pattern)?;
+    let mut data = alloc_working_set(working_set_size)?;
+    let data = WorkingSetData::new(&mut data, group_size, pattern)?;
 
     let ok = core_affinity::set_for_current(CoreId { id: 0 });
     if !ok {
