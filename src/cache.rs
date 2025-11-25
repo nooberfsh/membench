@@ -5,6 +5,11 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::bail;
+use tabled::{
+    Table, Tabled,
+    assert::assert_table,
+    settings::{Alignment, Style, object::Columns},
+};
 
 #[derive(Copy, Clone, Debug)]
 pub enum CacheType {
@@ -25,18 +30,14 @@ impl CacheType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Tabled)]
 pub struct Cache {
     pub ty: CacheType,
-    pub size: usize,
-    pub coherency_line_size: usize,
-    pub ways_of_associativity: usize,
-}
-
-impl Cache {
-    pub fn sets(&self) -> usize {
-        self.size / self.coherency_line_size / self.ways_of_associativity
-    }
+    pub size: size::Size,
+    pub cache_line_size: usize,
+    pub ways: usize,
+    // 下面的字段是通过上面的字段计算出来的.
+    pub sets: usize,
 }
 
 // TODO: support other platforms
@@ -89,11 +90,14 @@ fn get_cache_info(dir: &Path) -> anyhow::Result<Cache> {
     let coherency_line_size = load_int(dir, "coherency_line_size")?;
     let ways_of_associativity = load_int(dir, "ways_of_associativity")?;
 
+    let sets = size / coherency_line_size / ways_of_associativity;
+
     Ok(Cache {
         ty: cache_ty,
-        size,
-        coherency_line_size,
-        ways_of_associativity,
+        size: size::Size::from_const(size as i64),
+        cache_line_size: coherency_line_size,
+        ways: ways_of_associativity,
+        sets,
     })
 }
 
@@ -118,15 +122,14 @@ impl Display for CacheType {
 
 impl Display for Cache {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let size = size::Size::from_const(self.size as i64);
         write!(
             f,
-            "{}: size: {}, coherency_line_size: {}, ways_of_associativity: {}, sets: {}",
+            "{}: size: {}, cache_line_size: {}, ways: {}, sets: {}",
             self.ty.as_str(),
-            size,
-            self.coherency_line_size,
-            self.ways_of_associativity,
-            self.sets()
+            self.size,
+            self.cache_line_size,
+            self.ways,
+            self.sets
         )
     }
 }

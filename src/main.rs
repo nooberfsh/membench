@@ -7,6 +7,7 @@ use std::{
 use core_affinity::CoreId;
 use perf_event::events::Hardware;
 use perf_event::{Builder, Group};
+use tabled::Table;
 
 pub mod cache;
 pub mod latency;
@@ -74,9 +75,12 @@ impl BenchRes {
 
 fn main() -> anyhow::Result<()> {
     let caches = cache::get_cpu_cache(0)?;
-    for c in caches {
-        println!("{}", c);
-    }
+    let table = Table::new(caches);
+    println!("{table}");
+
+    // for c in caches {
+    //     println!("{}", c);
+    // }
     //test2();
     Ok(())
 }
