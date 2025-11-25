@@ -85,12 +85,24 @@ pub struct WorkingSetData {
     pattern: Pattern,
 }
 
+pub fn alloc_working_set(working_set_size: usize) -> anyhow::Result<Vec<CacheLine>> {
+    if working_set_size % CACHE_LINE_SIZE != 0 {
+        bail!("working set size 必须是 cache line size 的整数倍")
+    }
+
+    let cache_line_len = working_set_size / CACHE_LINE_SIZE;
+    let data = vec![CacheLine::empty(); cache_line_len];
+    Ok(data)
+}
+
 impl WorkingSetData {
     pub fn new(
         working_set_size: usize,
         group_size: usize,
         pattern: Pattern,
     ) -> anyhow::Result<Self> {
+        let mut data = alloc_working_set(working_set_size)?;
+
         let element_size = size_of::<Element>();
 
         // 保证 Element size 等于系统字长
@@ -105,10 +117,6 @@ impl WorkingSetData {
 
         if group_size == 0 {
             bail!("group size 必须 >0")
-        }
-
-        if working_set_size % CACHE_LINE_SIZE != 0 {
-            bail!("working set size 必须是 cache line size 的整数倍")
         }
 
         if working_set_size % group_size != 0 {
@@ -130,9 +138,7 @@ impl WorkingSetData {
             }
         }
 
-        let cache_line_len = working_set_size / CACHE_LINE_SIZE;
         let group_len = working_set_size / group_size / element_size;
-        let mut data = vec![CacheLine::empty(); cache_line_len];
 
         // 根据 pattern 计算出元素的访问的顺序.
         // 不包含第一个元素, 第一个访问的元素始终是 data[0].data[0]

@@ -9,10 +9,10 @@ use perf_event::events::Hardware;
 use perf_event::{Builder, Group};
 use tabled::Table;
 
+pub mod analysis;
 pub mod cache;
 pub mod latency;
 pub mod latency2;
-pub mod analysis;
 
 #[allow(non_upper_case_globals)]
 pub const SIZE_1GiB: usize = 1024 * 1024 * 1024;
@@ -75,7 +75,7 @@ impl BenchRes {
 }
 
 fn main() -> anyhow::Result<()> {
-    let data = analysis::random_read_latency(&[1,2,4,8], 10..24, 30)?;
+    let data = analysis::random_read_latency(&[1, 2, 4, 8], 10..24, 30)?;
     analysis::plot_read_latency(data, "random_read")?;
     // for c in caches {
     //     println!("{}", c);

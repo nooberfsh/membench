@@ -1,4 +1,4 @@
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use plotters::prelude::*;
 use std::ops::Range;
 
@@ -16,12 +16,9 @@ pub struct ReadLatency {
     max_latency: u64,
 }
 
-static COLORS :&[RGBColor] = &[RED, BLACK, BLUE, GREEN, MAGENTA, YELLOW, CYAN];
+static COLORS: &[RGBColor] = &[RED, BLACK, BLUE, GREEN, MAGENTA, YELLOW, CYAN];
 
-pub fn plot_read_latency(
-    input: ReadLatency,
-    name: &str,
-) -> anyhow::Result<()> {
+pub fn plot_read_latency(input: ReadLatency, name: &str) -> anyhow::Result<()> {
     let working_set_range = input.working_set_range;
     let latencies = input.latencies;
     let max_latency = input.max_latency;
@@ -51,15 +48,10 @@ pub fn plot_read_latency(
 
     for (latency, color) in latencies.iter().zip(COLORS.iter()) {
         let pairs = working_set_range.clone().zip(latency.avg_cycles.clone());
-        let points = PointSeries::of_element(
-            pairs.clone(),
-        5,
-        *color,
-        &|c, s, st| {
+        let points = PointSeries::of_element(pairs.clone(), 5, *color, &|c, s, st| {
             EmptyElement::at(c)    // We want to construct a composed element on-the-fly
             + Circle::new((0,0),s,st.filled()) // At this point, the new pixel coordinate is established
-        },
-    );
+        });
 
         chart.draw_series(points)?;
         let line = LineSeries::new(pairs, color);
