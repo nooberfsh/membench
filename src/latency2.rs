@@ -19,8 +19,12 @@ pub struct BenchResult {
 }
 
 impl BenchResult {
+    pub fn avg_cycles(&self) -> u64 {
+        self.stats.cycles / self.group_len as u64 / self.round as u64
+    }
+
     pub fn report(&self) {
-        let avg_cycles = self.stats.cycles / self.group_len as u64 / self.round as u64;
+        let avg_cycles = self.avg_cycles();
         let miss_rate = self.stats.l1d_miss as f64 / self.stats.l1d_access as f64;
         println!(
             "round: {}, working_set_size: {}, group size: {}, group len: {}",
