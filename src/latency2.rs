@@ -140,6 +140,11 @@ impl<'a> WorkingSetData<'a> {
 
         let group_len = working_set_size / group_size / element_size;
 
+        // 重新初始化 working set
+        for cl in &mut *data {
+            *cl = CacheLine::empty();
+        }
+
         // 根据 pattern 计算出元素的访问的顺序.
         // 不包含第一个元素, 第一个访问的元素始终是 data[0].data[0]
         let group_idx: Vec<usize> = match pattern {
@@ -268,7 +273,17 @@ pub fn bench(
     pattern: Pattern,
 ) -> anyhow::Result<BenchResult> {
     let mut data = alloc_working_set(working_set_size)?;
-    let data = WorkingSetData::new(&mut data, group_size, pattern)?;
+    bench_with_data(round, group_size, &mut data, pattern)
+}
+
+pub fn bench_with_data(
+    round: usize,
+    group_size: usize,
+    data: &mut[CacheLine],
+    pattern: Pattern,
+) -> anyhow::Result<BenchResult> {
+    let working_set_size = data.len() * CACHE_LINE_SIZE;
+    let data = WorkingSetData::new(data, group_size, pattern)?;
 
     let ok = core_affinity::set_for_current(CoreId { id: 0 });
     if !ok {
