@@ -5,11 +5,7 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::bail;
-use tabled::{
-    Table, Tabled,
-    assert::assert_table,
-    settings::{Alignment, Style, object::Columns},
-};
+use tabled::Tabled;
 
 #[derive(Copy, Clone, Debug)]
 pub enum CacheType {
