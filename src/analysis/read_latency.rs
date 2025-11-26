@@ -3,13 +3,13 @@ use std::ops::Range;
 use super::*;
 use crate::latency2;
 
-pub fn random_read_latency(
+pub fn read_latency(
     group_size_list: &[usize],
     working_set_range: Range<u32>,
     round: usize,
+    pattern: latency2::Pattern,
 ) -> anyhow::Result<ReadLatency> {
     let mut latencies = vec![];
-    let pattern = latency2::Pattern::Random;
     let mut max_latency = 0;
     for group_size in group_size_list {
         let mut avg_cycles = vec![];
@@ -34,10 +34,11 @@ pub fn random_read_latency(
     })
 }
 
-pub fn random_read_latency2(
+pub fn read_latency2(
     group_size_list: &[usize],
     working_set_range: Range<u32>,
     round: usize,
+    pattern: latency2::Pattern,
 ) -> anyhow::Result<ReadLatency> {
     let mut working_set = Vec::with_capacity(working_set_range.clone().count());
     for ws in working_set_range.clone() {
@@ -46,7 +47,6 @@ pub fn random_read_latency2(
     }
 
     let mut latencies = vec![];
-    let pattern = latency2::Pattern::Random;
     let mut max_latency = 0;
     for group_size in group_size_list {
         let mut avg_cycles = vec![];
@@ -71,12 +71,12 @@ pub fn random_read_latency2(
     })
 }
 
-pub fn random_read_latency3(
+pub fn read_latency3(
     group_size_list: &[usize],
     working_set_range: Range<u32>,
     round: usize,
+    pattern: latency2::Pattern
 ) -> anyhow::Result<ReadLatency> {
-    let pattern = latency2::Pattern::Random;
     let mut max_latency = 0;
     let mut latencies = Vec::with_capacity(group_size_list.len());
     for group_size in group_size_list {

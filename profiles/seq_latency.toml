@@ -1,0 +1,7 @@
+name = "seq_latency"
+kind = "seq_read_latency"
+group_size = [1,8,16,32]
+working_set = { start = 10, end = 31}
+round = 10
+
+

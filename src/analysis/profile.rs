@@ -16,7 +16,8 @@ pub struct Profile {
 
 #[derive(Deserialize, Debug)]
 pub enum ProfileKind {
-    RandomReadLatency
+    RandomReadLatency,
+    SeqReadLatency,
 }
 
 
@@ -25,6 +26,7 @@ where D: Deserializer<'de> {
     let buf = String::deserialize(deserializer)?;
     match buf.as_str() {
         "random_read_latency" => Ok(ProfileKind::RandomReadLatency),
+        "seq_read_latency" => Ok(ProfileKind::SeqReadLatency),
         _ => Err(serde::de::Error::custom(format!("invalid profile kind: {buf}"))),
     }
 
