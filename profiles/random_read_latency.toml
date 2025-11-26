@@ -1,0 +1,7 @@
+name = "random_read_latency"
+kind = "random_read_latency"
+group_size = [8,16,32]
+working_set = { start = 10, end = 31}
+round = 4
+
+

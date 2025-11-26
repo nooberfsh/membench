@@ -25,6 +25,7 @@ pub fn read_latency(
     let mut latencies = vec![];
     let mut max_latency = 0;
     for group_size in group_size_list {
+        println!("read_latency group_size: {group_size}");
         let mut avg_cycles = vec![];
         for data in &mut working_set {
             let res = latency::bench_with_data(round, *group_size, data, pattern)?;
