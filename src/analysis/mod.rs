@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use anyhow::{Context, bail};
+use anyhow::bail;
 use plotters::prelude::*;
 
 mod read_latency;
@@ -12,7 +12,7 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
     println!("analysis {} begin", profile.name);
     match profile.kind {
         ProfileKind::RandomReadLatency => {
-            let pattern = crate::latency2::Pattern::Random;
+            let pattern = crate::latency::Pattern::Random;
             let res = read_latency2(
                 &profile.group_size,
                 profile.working_set.clone(),
@@ -22,7 +22,7 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
             plot_read_latency(res, &profile.name)?;
         }
         ProfileKind::SeqReadLatency => {
-            let pattern = crate::latency2::Pattern::Seq;
+            let pattern = crate::latency::Pattern::Seq;
             let res = read_latency2(
                 &profile.group_size,
                 profile.working_set.clone(),

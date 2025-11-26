@@ -1,9 +1,9 @@
-use tabled::Table;
 use structopt::StructOpt;
+use tabled::Table;
 
 pub mod analysis;
 pub mod cache;
-pub mod latency2;
+pub mod latency;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "membench", about = "Memory analysis and benchmark tool")]
@@ -17,19 +17,19 @@ enum Command {
     CacheInfo {
         /// 指定某个 cpu core 的缓存
         #[structopt(short, long, default_value = "0")]
-        core : usize,
+        core: usize,
     },
     Analysis {
         /// 指定 profile 路径
         path: String,
-    }
+    },
 }
 
 fn main() -> anyhow::Result<()> {
     let opt = Opt::from_args();
     match opt.cmd {
-        Command::CacheInfo{core} => dump_cache_info(core)?,
-        Command::Analysis { path} => {
+        Command::CacheInfo { core } => dump_cache_info(core)?,
+        Command::Analysis { path } => {
             let profile = analysis::load(&path)?;
             analysis::analysis_with_profile(&profile)?;
         }
