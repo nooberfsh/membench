@@ -122,6 +122,9 @@ impl<'a> WorkingSetData<'a> {
         if working_set_size % group_size != 0 {
             bail!("working set size 必须是 group size 的整数倍")
         }
+        if working_set_size < group_size * element_size {
+            bail!("working set size 不能小于一个 group 字节数, group_size: {group_size}")
+        }
 
         let mut block_size = working_set_size;
         if let Pattern::RandomBlock(block_count) = pattern {

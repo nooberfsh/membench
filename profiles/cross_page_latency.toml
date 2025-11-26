@@ -1,0 +1,7 @@
+name = "cross_page_latency"
+kind = "seq_read_latency"
+group_size = [8,64, 512]
+working_set = { start = 12, end = 31}
+round = 10
+
+
