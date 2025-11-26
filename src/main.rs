@@ -75,12 +75,16 @@ impl BenchRes {
 }
 
 fn main() -> anyhow::Result<()> {
-    let data = analysis::random_read_latency(&[1, 2, 4, 8], 10..24, 30)?;
-    analysis::plot_read_latency(data, "random_read")?;
+    // let data = analysis::random_read_latency(&[1, 2, 4, 8], 10..25, 50)?;
+    // analysis::plot_read_latency(data, "random_read")?;
+    // let data = analysis::random_read_latency2(&[1, 4, 8, 16], 10..25, 100)?;
+    // analysis::plot_read_latency(data, "random_read2")?;
+    // let data = analysis::random_read_latency3(&[1, 4, 8, 16], 10..25, 50)?;
+    // analysis::plot_read_latency(data, "random_read3")?;
     // for c in caches {
     //     println!("{}", c);
     // }
-    //test2();
+    test2();
     Ok(())
 }
 
@@ -93,21 +97,21 @@ fn dump_cache_info(cpu: usize) -> anyhow::Result<()> {
 
 fn test2() {
     let round = 100;
-    let working_set_size = 4 * size::MiB;
-    let res = latency::bench::<0>(round, working_set_size as usize).unwrap();
-    res.report();
+    let working_set_size = 512 * size::KiB;
+    // let res = latency::bench::<0>(round, working_set_size as usize).unwrap();
+    // res.report();
 
-    //let working_set_size = 16* size::KiB;
-    let res = latency::bench::<1>(round, working_set_size as usize).unwrap();
-    res.report();
+    // //let working_set_size = 16* size::KiB;
+    // let res = latency::bench::<1>(round, working_set_size as usize).unwrap();
+    // res.report();
 
-    //let working_set_size = 16 * size::KiB;
-    let res = latency::bench::<3>(round, working_set_size as usize).unwrap();
-    res.report();
+    // //let working_set_size = 16 * size::KiB;
+    // let res = latency::bench::<3>(round, working_set_size as usize).unwrap();
+    // res.report();
 
-    //let working_set_size = 32 * size::KiB;
-    let res = latency::bench::<7>(round, working_set_size as usize).unwrap();
-    res.report();
+    // //let working_set_size = 32 * size::KiB;
+    // let res = latency::bench::<7>(round, working_set_size as usize).unwrap();
+    // res.report();
 
     let pattern = latency2::Pattern::Random;
     let res = latency2::bench(round, 1, working_set_size as usize, pattern).unwrap();
