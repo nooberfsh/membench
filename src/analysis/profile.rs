@@ -12,6 +12,7 @@ pub struct Profile {
     pub group_size: Vec<usize>,
     pub working_set: Range<u32>,
     pub round: usize,
+    pub block_count: Option<usize>,
 }
 
 #[derive(Deserialize, Debug)]

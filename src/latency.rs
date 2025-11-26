@@ -126,9 +126,10 @@ impl<'a> WorkingSetData<'a> {
             bail!("working set size 不能小于一个 group 字节数, group_size: {group_size}")
         }
 
-        let mut block_size = working_set_size;
+        let group_len = working_set_size / group_size / element_size;
+        let mut block_group_len = group_len;
         if let Pattern::RandomBlock(block_count) = pattern {
-            block_size = working_set_size / block_count;
+            let block_size = working_set_size / block_count;
             if working_set_size % block_count != 0 {
                 bail!("working set size 必须是 block count 的整数倍")
             }
@@ -139,9 +140,13 @@ impl<'a> WorkingSetData<'a> {
             if block_size % group_size != 0 {
                 bail!("block size 必须是 group size 的整数倍")
             }
+
+            block_group_len = group_len / block_count;
+            if group_len % block_count != 0 {
+                bail!("group len 必须是 block count 的整数倍, group_len: {group_len}, block_count: {block_count}")
+            }
         }
 
-        let group_len = working_set_size / group_size / element_size;
 
         // 重新初始化 working set
         for cl in &mut *data {
@@ -149,19 +154,28 @@ impl<'a> WorkingSetData<'a> {
         }
 
         // 根据 pattern 计算出元素的访问的顺序.
-        // 不包含第一个元素, 第一个访问的元素始终是 data[0].data[0]
+        // 第一个访问的元素始终是 data[0].data[0]
         let group_idx: Vec<usize> = match pattern {
-            Pattern::Seq => (1..group_len).collect(),
+            Pattern::Seq => (0..group_len).collect(),
             Pattern::Random => {
-                let mut idx: Vec<usize> = (1..group_len).collect();
-                fastrand::shuffle(&mut idx);
+                let mut idx: Vec<usize> = (0..group_len).collect();
+                fastrand::shuffle(&mut idx[1..]);
                 idx
             }
             Pattern::RandomBlock(block_count) => {
+                assert_eq!(block_count * block_group_len, group_len);
+                let mut idx: Vec<usize> = (0..group_len).collect();
+                for i in 0..block_count {
+                    let start = i * block_group_len + 1;
+                    let end = (i + 1) * block_group_len;
+                    fastrand::shuffle(&mut idx[start..end]);
+                }
+
                 todo!()
             }
         };
-        assert_eq!(group_idx.len() + 1, group_len);
+        assert_eq!(group_idx.len(), group_len);
+        assert_eq!(group_idx.get(0), Some(&0), "遍历从第一个元素开始");
 
         let location = |group_idx: usize| {
             let element_idx = group_idx * group_size;
@@ -170,10 +184,10 @@ impl<'a> WorkingSetData<'a> {
             (cache_line_idx, cache_line_offset)
         };
 
-        // 第一个元素作为其实元素
+        // 第一个元素作为起始元素
         let mut current = 0;
         // 把所有 group 按照 group_idx 串联起来.
-        for next in &group_idx {
+        for next in &group_idx[1..] {
             let (current_cl_idx, current_cl_offset) = location(current);
             let (next_cl_idx, next_cl_offset) = location(*next);
             let ptr = data[next_cl_idx].data[next_cl_offset..].as_ptr();
@@ -202,7 +216,7 @@ impl<'a> WorkingSetData<'a> {
         );
 
         // 遍历 data 记录访问的元素的 group idx
-        let mut group_idx = vec![];
+        let mut group_idx = vec![0];
         let base = self.data[0].data[0..].as_ptr();
         unsafe {
             let mut cursor = &self.data[0].data[0];

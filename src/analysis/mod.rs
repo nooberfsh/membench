@@ -12,6 +12,7 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
     println!("analysis {} begin", profile.name);
     match profile.kind {
         ProfileKind::RandomReadLatency => {
+            let 
             let pattern = crate::latency::Pattern::Random;
             let res = read_latency(
                 &profile.group_size,
