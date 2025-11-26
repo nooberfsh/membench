@@ -1,0 +1,9 @@
+name = "random_block_read_latency"
+kind = "random_block_read_latency"
+group_size = [8]
+block_count = [8,32,64]
+working_set = { start = 12, end = 31}
+round = 2
+
+
+

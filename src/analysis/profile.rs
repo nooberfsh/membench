@@ -12,12 +12,13 @@ pub struct Profile {
     pub group_size: Vec<usize>,
     pub working_set: Range<u32>,
     pub round: usize,
-    pub block_count: Option<usize>,
+    pub block_count: Option<Vec<usize>>,
 }
 
 #[derive(Deserialize, Debug)]
 pub enum ProfileKind {
     RandomReadLatency,
+    RandomBlockReadLatency,
     SeqReadLatency,
 }
 
@@ -28,6 +29,7 @@ where
     let buf = String::deserialize(deserializer)?;
     match buf.as_str() {
         "random_read_latency" => Ok(ProfileKind::RandomReadLatency),
+        "random_block_read_latency" => Ok(ProfileKind::RandomBlockReadLatency),
         "seq_read_latency" => Ok(ProfileKind::SeqReadLatency),
         _ => Err(serde::de::Error::custom(format!(
             "invalid profile kind: {buf}"

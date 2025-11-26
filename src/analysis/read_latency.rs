@@ -3,7 +3,6 @@ use std::ops::Range;
 use super::*;
 use crate::latency;
 
-
 /// 根据配置信息测量读取 延迟
 ///
 /// 注意:又不不同的 group_size 可能会对应相同的 working set size, 为了测试的一致性
@@ -36,7 +35,46 @@ pub fn read_latency(
             avg_cycles.push(cycle);
         }
         let latency = ReadLatencyLine {
-            group_size: *group_size,
+            legend: *group_size,
+            avg_cycles,
+        };
+        latencies.push(latency);
+    }
+    Ok(ReadLatency {
+        working_set_range,
+        latencies,
+        max_latency,
+    })
+}
+
+pub fn random_block_read_latency(
+    block_count_list: &[usize],
+    working_set_range: Range<u32>,
+    group_size: usize,
+    round: usize,
+) -> anyhow::Result<ReadLatency> {
+    let mut working_set = Vec::with_capacity(working_set_range.clone().count());
+    for ws in working_set_range.clone() {
+        let data = latency::alloc_working_set(2usize.pow(ws))?;
+        working_set.push(data)
+    }
+
+    let mut latencies = vec![];
+    let mut max_latency = 0;
+    for block_count in block_count_list {
+        println!("read_latency block_count: {block_count}");
+        let pattern = latency::Pattern::RandomBlock(*block_count);
+        let mut avg_cycles = vec![];
+        for data in &mut working_set {
+            let res = latency::bench_with_data(round, group_size, data, pattern)?;
+            let cycle = res.avg_cycles();
+            if cycle > max_latency {
+                max_latency = cycle;
+            }
+            avg_cycles.push(cycle);
+        }
+        let latency = ReadLatencyLine {
+            legend: *block_count,
             avg_cycles,
         };
         latencies.push(latency);
@@ -58,7 +96,7 @@ pub fn read_latency_pivot(
     let mut latencies = Vec::with_capacity(group_size_list.len());
     for group_size in group_size_list {
         latencies.push(ReadLatencyLine {
-            group_size: *group_size,
+            legend: *group_size,
             avg_cycles: vec![],
         });
     }
@@ -67,7 +105,7 @@ pub fn read_latency_pivot(
         let mut data = latency::alloc_working_set(2usize.pow(ws))?;
 
         for line in &mut latencies {
-            let res = latency::bench_with_data(round, line.group_size, &mut data, pattern)?;
+            let res = latency::bench_with_data(round, line.legend, &mut data, pattern)?;
             let cycle = res.avg_cycles();
             if cycle > max_latency {
                 max_latency = cycle;
@@ -103,7 +141,7 @@ pub fn read_latency_buggy(
             avg_cycles.push(cycle);
         }
         let latency = ReadLatencyLine {
-            group_size: *group_size,
+            legend: *group_size,
             avg_cycles,
         };
         latencies.push(latency);

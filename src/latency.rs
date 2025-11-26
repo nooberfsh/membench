@@ -143,10 +143,11 @@ impl<'a> WorkingSetData<'a> {
 
             block_group_len = group_len / block_count;
             if group_len % block_count != 0 {
-                bail!("group len 必须是 block count 的整数倍, group_len: {group_len}, block_count: {block_count}")
+                bail!(
+                    "group len 必须是 block count 的整数倍, group_len: {group_len}, block_count: {block_count}"
+                )
             }
         }
-
 
         // 重新初始化 working set
         for cl in &mut *data {
@@ -170,8 +171,7 @@ impl<'a> WorkingSetData<'a> {
                     let end = (i + 1) * block_group_len;
                     fastrand::shuffle(&mut idx[start..end]);
                 }
-
-                todo!()
+                idx
             }
         };
         assert_eq!(group_idx.len(), group_len);

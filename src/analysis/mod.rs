@@ -12,7 +12,6 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
     println!("analysis {} begin", profile.name);
     match profile.kind {
         ProfileKind::RandomReadLatency => {
-            let 
             let pattern = crate::latency::Pattern::Random;
             let res = read_latency(
                 &profile.group_size,
@@ -20,7 +19,23 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
                 profile.round,
                 pattern,
             )?;
-            plot_read_latency(res, &profile.name)?;
+            plot_read_latency(res, &profile.name, "group_size")?;
+        }
+        ProfileKind::RandomBlockReadLatency => {
+            let Some(block_count_list) = &profile.block_count else {
+                bail!("RandomBlockReadLatency 必须指定 block_count 参数")
+            };
+            if profile.group_size.len() != 1 {
+                bail!("RandomBlockReadLatency 只能制定一个group_size")
+            }
+            let group_size = profile.group_size[0];
+            let res = random_block_read_latency(
+                &block_count_list,
+                profile.working_set.clone(),
+                group_size,
+                profile.round,
+            )?;
+            plot_read_latency(res, &profile.name, "block_count")?;
         }
         ProfileKind::SeqReadLatency => {
             let pattern = crate::latency::Pattern::Seq;
@@ -30,7 +45,7 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
                 profile.round,
                 pattern,
             )?;
-            plot_read_latency(res, &profile.name)?;
+            plot_read_latency(res, &profile.name, "group_size")?;
         }
     }
     println!("analysis {} success", profile.name);
@@ -38,7 +53,7 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
 }
 
 pub struct ReadLatencyLine {
-    pub group_size: usize,
+    pub legend: usize,
     pub avg_cycles: Vec<u64>,
 }
 
@@ -50,7 +65,7 @@ pub struct ReadLatency {
 
 static COLORS: &[RGBColor] = &[RED, BLACK, BLUE, GREEN, MAGENTA, YELLOW, CYAN];
 
-pub fn plot_read_latency(input: ReadLatency, name: &str) -> anyhow::Result<()> {
+pub fn plot_read_latency(input: ReadLatency, name: &str, legend: &str) -> anyhow::Result<()> {
     let working_set_range = input.working_set_range;
     let latencies = input.latencies;
     let max_latency = input.max_latency;
@@ -87,7 +102,7 @@ pub fn plot_read_latency(input: ReadLatency, name: &str) -> anyhow::Result<()> {
 
         chart.draw_series(points)?;
         let line = LineSeries::new(pairs, color);
-        let label = format!("group_size={}", latency.group_size);
+        let label = format!("{}={}", legend, latency.legend);
         chart
             .draw_series(line)
             .unwrap()
