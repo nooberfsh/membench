@@ -1,9 +1,25 @@
+use std::ops::Range;
+
 use anyhow::{Context, bail};
 use plotters::prelude::*;
-use std::ops::Range;
 
 mod random_read_latency;
 pub use random_read_latency::*;
+mod profile;
+pub use profile::*;
+
+pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
+    println!("analysis {} begin", profile.name);
+    match profile.kind {
+        ProfileKind::RandomReadLatency => {
+            let res = random_read_latency2(&profile.group_size, profile.working_set.clone(), profile.round)?;
+            plot_read_latency(res, &profile.name)?;
+        },
+    }
+    println!("analysis {} success", profile.name);
+    Ok(())
+}
+
 
 pub struct ReadLatencyLine {
     pub group_size: usize,

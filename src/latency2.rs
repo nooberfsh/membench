@@ -215,7 +215,6 @@ impl<'a> WorkingSetData<'a> {
         }
 
         assert_eq!(group_idx, expect_group_idx);
-        println!("check finish");
     }
 }
 
