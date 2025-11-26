@@ -13,19 +13,28 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
     match profile.kind {
         ProfileKind::RandomReadLatency => {
             let pattern = crate::latency2::Pattern::Random;
-            let res = read_latency2(&profile.group_size, profile.working_set.clone(), profile.round, pattern)?;
+            let res = read_latency2(
+                &profile.group_size,
+                profile.working_set.clone(),
+                profile.round,
+                pattern,
+            )?;
             plot_read_latency(res, &profile.name)?;
-        },
+        }
         ProfileKind::SeqReadLatency => {
             let pattern = crate::latency2::Pattern::Seq;
-            let res = read_latency2(&profile.group_size, profile.working_set.clone(), profile.round, pattern)?;
+            let res = read_latency2(
+                &profile.group_size,
+                profile.working_set.clone(),
+                profile.round,
+                pattern,
+            )?;
             plot_read_latency(res, &profile.name)?;
-        },
+        }
     }
     println!("analysis {} success", profile.name);
     Ok(())
 }
-
 
 pub struct ReadLatencyLine {
     pub group_size: usize,

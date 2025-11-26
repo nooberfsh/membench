@@ -20,16 +20,18 @@ pub enum ProfileKind {
     SeqReadLatency,
 }
 
-
 fn deserialize_profile_kind<'de, D>(deserializer: D) -> Result<ProfileKind, D::Error>
-where D: Deserializer<'de> {
+where
+    D: Deserializer<'de>,
+{
     let buf = String::deserialize(deserializer)?;
     match buf.as_str() {
         "random_read_latency" => Ok(ProfileKind::RandomReadLatency),
         "seq_read_latency" => Ok(ProfileKind::SeqReadLatency),
-        _ => Err(serde::de::Error::custom(format!("invalid profile kind: {buf}"))),
+        _ => Err(serde::de::Error::custom(format!(
+            "invalid profile kind: {buf}"
+        ))),
     }
-
 }
 
 pub fn load(s: &str) -> anyhow::Result<Profile> {

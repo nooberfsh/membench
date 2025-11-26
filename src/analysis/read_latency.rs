@@ -75,7 +75,7 @@ pub fn read_latency3(
     group_size_list: &[usize],
     working_set_range: Range<u32>,
     round: usize,
-    pattern: latency2::Pattern
+    pattern: latency2::Pattern,
 ) -> anyhow::Result<ReadLatency> {
     let mut max_latency = 0;
     let mut latencies = Vec::with_capacity(group_size_list.len());
@@ -89,7 +89,7 @@ pub fn read_latency3(
     for ws in working_set_range.clone() {
         let mut data = latency2::alloc_working_set(2usize.pow(ws))?;
 
-        for line in &mut latencies{
+        for line in &mut latencies {
             let res = latency2::bench_with_data(round, line.group_size, &mut data, pattern)?;
             let cycle = res.avg_cycles();
             if cycle > max_latency {

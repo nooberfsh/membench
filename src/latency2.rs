@@ -97,7 +97,7 @@ pub fn alloc_working_set(working_set_size: usize) -> anyhow::Result<Vec<CacheLin
 
 impl<'a> WorkingSetData<'a> {
     pub fn new(
-        data: &'a mut[CacheLine],
+        data: &'a mut [CacheLine],
         group_size: usize,
         pattern: Pattern,
     ) -> anyhow::Result<Self> {
@@ -278,7 +278,7 @@ pub fn bench(
 pub fn bench_with_data(
     round: usize,
     group_size: usize,
-    data: &mut[CacheLine],
+    data: &mut [CacheLine],
     pattern: Pattern,
 ) -> anyhow::Result<BenchResult> {
     let working_set_size = data.len() * CACHE_LINE_SIZE;
