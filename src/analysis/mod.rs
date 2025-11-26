@@ -13,7 +13,7 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
     match profile.kind {
         ProfileKind::RandomReadLatency => {
             let pattern = crate::latency::Pattern::Random;
-            let res = read_latency2(
+            let res = read_latency(
                 &profile.group_size,
                 profile.working_set.clone(),
                 profile.round,
@@ -23,7 +23,7 @@ pub fn analysis_with_profile(profile: &Profile) -> anyhow::Result<()> {
         }
         ProfileKind::SeqReadLatency => {
             let pattern = crate::latency::Pattern::Seq;
-            let res = read_latency2(
+            let res = read_latency(
                 &profile.group_size,
                 profile.working_set.clone(),
                 profile.round,
